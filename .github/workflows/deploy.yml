@@ -1,5 +1,4 @@
 # This is a basic workflow to help you get started with Actions
-
 name: node.js CI
 
 # Controls when the workflow will run
@@ -8,19 +7,13 @@ on:
   push:
     branches: [ 'leejun' ]
   pull_request:
-    branches: [ 'leejun' ]
+    branches: [ 'master' ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  deploy:
+    name: CD Pipeline
+    runs-on: ubuntu-latest
 
-        
-  AUTO_DEPLOY:
-
-    runs-on: ubuntu-20.04
-    needs: test
     strategy:
       matrix:
         node-version: [16.x]
@@ -35,6 +28,6 @@ jobs:
           port: ${{ secrets.REMOTE_SSH_PORT }}
           script: |
                 cd ${{ secrets.ubuntu_PATH }}
-                sudo git pull origin main
+                sudo git pull origin master
                 sudo npm i
                 pm2 restart app
