@@ -60,4 +60,4 @@ jobs:
         working-directory: ./
         run: |
           npm install
-          npm run build --if-present
+          npm npm run build
