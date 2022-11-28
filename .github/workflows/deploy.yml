@@ -7,7 +7,7 @@ on:
   push:
     branches: [ 'leejun' ]
   pull_request:
-    branches: [ 'leejun' ]
+    branches: [ 'master' ]
 
 jobs:
   deploy:
@@ -28,6 +28,6 @@ jobs:
           port: ${{ secrets.REMOTE_SSH_PORT }}
           script: |
                 cd ${{ secrets.ubuntu_PATH }}
-                sudo git pull origin main
+                sudo git pull origin master
                 sudo npm i
                 pm2 restart app
