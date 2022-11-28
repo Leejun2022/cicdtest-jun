@@ -1,28 +1,38 @@
 # This is a basic workflow to help you get started with Actions
 
-name: deploy
+name: node.js CI
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
+  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches:
-      - leejun
+    branches: [ 'leejun' ]
+  pull_request:
+    branches: [ 'leejun' ]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  SSH:
-    runs-on: ubuntu-latest
+
+        
+  AUTO_DEPLOY:
+
+    runs-on: ubuntu-20.04
+    needs: test
+    strategy:
+      matrix:
+        node-version: [16.x]
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Run scripts in server
-        uses: appleboy/ssh-action@master
+      - name: Deploy
+        uses: appleboy/ssh-action@v0.1.5
         with:
-          key: ${{ secrets.SSH_KEY }}
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ secrets.REMOTE_IP }}
+          username: ${{ secrets.REMOTE_SSH_ID }}
+          key: ${{ secrets.REMOTE_SSH_KEY }}
+          port: ${{ secrets.REMOTE_SSH_PORT }}
           script: |
                 cd ${{ secrets.ubuntu_PATH }}
                 sudo git pull origin main
