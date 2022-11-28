@@ -1,33 +1,20 @@
-# This is a basic workflow to help you get started with Actions
-name: node.js CI
 
-# Controls when the workflow will run
+name: remote ssh command for deploy
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ 'master' ]
-  pull_request:
-    branches: [ 'master' ]
+    branches: [main]
 
+#
 jobs:
-  deploy:
-    name: CD Pipeline
+  build:
+    name: Build
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [16.x]
-
     steps:
-      - name: Deploy
-        uses: appleboy/ssh-action@v0.1.5
+      - name: executing remote ssh commands using key
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.REMOTE_IP }}
           username: ${{ secrets.REMOTE_SSH_ID }}
           key: ${{ secrets.REMOTE_SSH_KEY }}
           port: ${{ secrets.REMOTE_SSH_PORT }}
-          script: |
-                cd ${{ secrets.ubuntu_PATH }}
-                sudo git pull origin master
-                sudo npm i
-                pm2 restart app
+          script: ./deploy.sh
