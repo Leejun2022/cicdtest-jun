@@ -1,3 +1,6 @@
+# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
 name: deploy
 
 on:
@@ -8,11 +11,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-lastest
 
     strategy:
       matrix:
-        node-version: [16.15.1]
+        node-version: [16.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -28,22 +31,32 @@ jobs:
         run: npm -v
 
       - name: create env file
-        working-directory: ./
+        working-directory: ./cicd_test_jun
+
         run: |
           pwd
           touch .env
-          echo REDIS_USERNAME=${{ secrets.REDIS_USERNAME }} >> .env
-          echo REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} >> .env
-          echo REDIS_HOST=${{ secrets.REDIS_HOST }} >> .env
-          echo REDIS_PORT=${{ secrets.REDIS_PORT }} >> .env
           echo PORT=${{ secrets.PORT }} >> .env
-          echo MONGODB_URI=${{ secrets.MONGODB_URI }} >> .env
-          echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env
-          echo SECRET_KEY=${{ secrets.JWT_ALGO }} >> .env
+          echo MONGODB=${{ secrets.MONGODB }} >> .env
+          echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID}} >> .env
+          echo AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME}} >> .env
+          echo AWS_REGION=${{ secrets.AWS_REGION}} >> .env
+          echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY}} >> .env
+          echo DB_END_POINT=${{ secrets.DB_END_POINT}} >> .env
+          echo DB_NAME=${{ secrets.DB_NAME}} >> .env
+          echo DB_PASSWORD=${{ secrets.DB_PASSWORD}} >> .env
+          echo DB_PORT=${{ secrets.DB_PORT}} >> .env
+          echo DB_USER=${{ secrets.DB_USER}} >> .env
+          echo REDIS_HOST=${{ secrets.REDIS_HOST}} >> .env
+          echo REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD}} >> .env
+          echo REDIS_PORT=${{ secrets.REDIS_PORT}} >> .env
+          echo REDIS_USERNAME=${{ secrets.REDIS_USERNAME}} >> .env
+          echo SECRET_KEY=${{ secrets.SECRET_KEY}} >> .env
+
           cat .env
 
       - name: build server files
-        working-directory: ./
+        working-directory: ./cicd_test_jun
         run: |
-          yarn
-          yarn run build
+          npm install
+          npm run build --if-present
