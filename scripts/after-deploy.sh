@@ -1,5 +1,5 @@
 #!/bin/bash
-REPOSITORY=/home/ubuntu/cicdtest/cicd_test_jun/build
+REPOSITORY=/home/ubuntu/cicdtest/build
 
 cd $REPOSITORY
 
