@@ -37,8 +37,8 @@ jobs:
       - name: build client files
         working-directory: ./
         run: |
-          yarn install --frozen-lockfile
-          yarn build
+          npm install
+          npm build
 
       - name: zip distributions
         run: zip -r cicdtest.zip ./dist ./client/dist ./appspec.yml ./scripts
