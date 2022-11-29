@@ -57,5 +57,5 @@ jobs:
         run: aws deploy create-deployment
           --application-name cicdtest-jun
           --deployment-config-name CodeDeployDefault.OneAtATime
-          --deployment-group-name group
+          --deployment-group-name GROUP
           --s3-location bucket=cicdtest-jun,bundleType=zip,key=public/cicdtest.zip
