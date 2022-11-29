@@ -28,20 +28,20 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: create env file
-        working-directory: ./server
+        working-directory: ./
         run: |
           touch .env
           cat << EOF >> .env
           ${{ secrets.ENV }}
 
       - name: build client files
-        working-directory: ./client
+        working-directory: ./
         run: |
           yarn install --frozen-lockfile
           yarn build
 
       - name: zip distributions
-        run: zip -r cicdtest.zip ./client/dist ./server ./appspec.yml ./scripts
+        run: zip -r cicdtest.zip ./dist ./client/dist ./appspec.yml ./scripts
 
       - name: AWS configure credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -55,7 +55,7 @@ jobs:
 
       - name: deploy with AWS codeDeploy
         run: aws deploy create-deployment
-          --application-name cicd_test_jun
+          --application-name cicdtest-jun
           --deployment-config-name CodeDeployDefault.OneAtATime
-          --deployment-group-name deploy-group
+          --deployment-group-name group
           --s3-location bucket=cicdtest-jun,bundleType=zip,key=public/cicdtest.zip
