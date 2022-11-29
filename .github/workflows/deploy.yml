@@ -5,9 +5,9 @@ name: deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   build:
@@ -51,11 +51,11 @@ jobs:
           aws-region: ap-northeast-2
 
       - name: upload to S3
-        run: aws s3 cp --region ap-northeast-2 ./blog-vanilla.zip s3://blog-vanilla-bucket/public/
+        run: aws s3 cp --region ap-northeast-2 ./cicdtest.zip s3://cicdtest-jun/public/
 
       - name: deploy with AWS codeDeploy
         run: aws deploy create-deployment
-          --application-name blog-vanilla-codedeploy
+          --application-name cicd_test_jun
           --deployment-config-name CodeDeployDefault.OneAtATime
           --deployment-group-name deploy-group
-          --s3-location bucket=blog-vanilla-bucket,bundleType=zip,key=public/blog-vanilla.zip
+          --s3-location bucket=cicdtest-jun,bundleType=zip,key=public/cicdtest.zip
