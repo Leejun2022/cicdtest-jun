@@ -5,4 +5,4 @@ cd $REPOSITORY
 
 sudo npm install
 
-sudo pm2 restart app
+sudo /usr/bin/pm2 start app.js
