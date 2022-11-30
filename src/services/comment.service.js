@@ -36,9 +36,6 @@ class CommentService {
   updateCommentLike = async (userKey, commentId) => {
     const dup = await this.commentRepository.reportCommentAuthor(commentId);
 
-    console.log(dup);
-    console.log(userKey);
-
     if (dup === userKey) return -1;
 
     const isCommentLike = await this.commentRepository.isCommentLike(
@@ -66,39 +63,46 @@ class CommentService {
     return count;
   };
 
-  //덧글 신고하기
-  reportComment = async (userKey, commentId, why) => {
-    //코멘트 아이디를 기반으로 작성자 아이디를 가져오고
-    //신고자 ID, 작성자 ID, 신고게시글유형(덧글인지 뭔지), 신고 대상 ID를 저장
-    let type = "comment";
-    const author = await this.commentRepository.reportCommentAuthor(commentId);
-    if (author === userKey) {
+  selectComment = async (userKey, commentId) => {
+    const select = await this.commentRepository.selectComment(
+      userKey,
+      commentId
+    );
+    return select;
+  };
+
+  //대댓글 기능===========================================================
+  //대댓글 생성 기능
+  reComment = async (userKey, commentId, re, targetUser) => {
+    const reply = await this.commentRepository.createReply(
+      userKey,
+      commentId,
+      re,
+      targetUser
+    );
+    return reply;
+  };
+
+  //대댓글 가져오기
+  getReComment = async (commentId) => {
+    const reply = await this.commentRepository.getReComment(commentId);
+    return reply;
+  };
+
+  //대댓글 수정하기
+  putRe = async (replyId, userKey, re) => {
+    const reply = await this.commentRepository.putRe(replyId, userKey, re);
+    return reply;
+  };
+
+  //대댓글 삭제하기
+  deleteRe = async (replyId, userKey) => {
+    const check = await this.commentRepository.checkRe(replyId);
+    if (check.targetUser === "삭제") {
       return;
     }
-
-    //중복 확인
-    const redup = await this.commentRepository.reportRedup(
-      userKey,
-      author,
-      commentId,
-      type
-    );
-
-    if (redup[0]) {
-      const dupmes = false;
-      return dupmes;
-    }
-
-    //신고 됌
-    const report = await this.commentRepository.reportComment(
-      userKey,
-      author,
-      commentId,
-      type,
-      why
-    );
-
-    return report;
+    const data = await this.commentRepository.deleteRe(replyId, userKey);
+    return data;
   };
 }
 

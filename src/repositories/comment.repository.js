@@ -1,4 +1,4 @@
-const { Users, Posts, Comment, CommentLike } = require("../models"); //모델 데이터를 가져오고
+const { Comment, CommentLike, Reply, CommentSelect } = require("../models"); //모델 데이터를 가져오고
 const { Op } = require("sequelize");
 const Report = require("../schemas/report");
 
@@ -78,55 +78,56 @@ class CommentRepository {
     return data_length;
   };
 
-  //덧글 신고하기, 이 덧글 누가 썻나? 단, 좋아요 할 때 자신에게 방지하는 용고로도 사용 가능
-  reportCommentAuthor = async (commentId) => {
-    const data = await Comment.findByPk(commentId);
-    const dataId = data.userKey;
-    return dataId;
+  selectComment = async (userKey, commentId) => {
+    const data = await CommentSelect.create({ userKey, commentId });
+    return data;
   };
 
-  //덧글 신고하기, 신고가 중복되는가?
-  reportRedup = async (reporterId, suspectId, targetId, targetName) => {
-    const data = {
-      reporterId: Number(reporterId),
-      suspectId: Number(suspectId),
-      targetId: Number(targetId),
-      targetName: targetName,
-    };
-
-    const result = await Report.find({
-      ids: data,
+  //대댓글 생성
+  createReply = async (userKey, commentId, comment, targetUser) => {
+    const data = await Reply.create({
+      userKey,
+      commentId,
+      comment,
+      targetUser,
     });
-
-    return result;
+    return data;
   };
 
-  //덧글 신고하기
-  reportComment = async (reporterId, suspectId, targetId, targetName, why) => {
-    const date = new Date();
-    const reportId = date.valueOf();
-    const commentId = targetId;
-    const data = await Comment.findByPk(commentId);
-    const content = data.comment;
-    const createdAt = date;
-    const updatedAt = date;
-
-    const result = await Report.create({
-      reportId,
-      ids: {
-        reporterId: Number(reporterId),
-        suspectId: Number(suspectId),
-        targetId: Number(targetId),
-        targetName: targetName,
+  //대댓글 가져오기
+  getReComment = async (commentId) => {
+    const data = await Reply.findAll({
+      where: {
+        [Op.and]: [{ commentId }],
       },
-      why,
-      content: {
-        content: content,
-      },
-      createdAt,
-      updatedAt,
     });
-    return result;
+    return data;
+  };
+
+  //대댓글 수정하기
+  putRe = async (replyId, userKey, re) => {
+    const putRe = await Reply.update({ comment: re }, { where: { replyId } });
+    return putRe;
+  };
+
+  checkRe = async (replyId) => {
+    const data = await Reply.findOne({
+      where: {
+        [Op.and]: [{ replyId }],
+      },
+    });
+    return data;
+  };
+
+  //대댓글 삭제하기
+  deleteRe = async (replyId, userKey) => {
+    const comment = "삭제된 덧글입니다.";
+    const targetUser = "삭제";
+    const deleteRe = await Reply.update(
+      { comment, targetUser },
+      { where: { replyId } }
+    );
+    return deleteRe;
   };
 }
 

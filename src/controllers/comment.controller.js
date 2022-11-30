@@ -1,7 +1,9 @@
 const CommentService = require("../services/comment.service");
+const AdviceService = require("../services/advice.service");
 
 class CommentController {
   commentService = new CommentService();
+  adviceService = new AdviceService();
 
   createComment = async (req, res, next) => {
     try {
@@ -110,35 +112,108 @@ class CommentController {
     }
   };
 
-  reportComment = async (req, res, next) => {
+  //댓글 채택
+  selectComment = async (req, res, next) => {
+    const { userKey } = res.locals.user;
+    const { commentId } = req.params;
+
+    try {
+      await this.commentService.selectComment(userKey, commentId);
+      // let message = "";
+      // if (selectComment) {
+      //   message = "채택 성공";
+      // } else {
+      //   message = "채택 취소";
+      // }
+      res.status(200).json({ Message: "채택되었습니다." });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  //대댓글 기능===========================================================
+  //대댓글 생성 기능
+  reComment = async (req, res, next) => {
     try {
       const { commentId } = req.params;
       const { userKey } = res.locals.user;
-      const { why } = req.body;
+      const { re, targetUser } = req.body;
+      //re: 대댓글 내용
+      //targetUser: 만약 대댓글 중에서 해당 대댓글에 답글을 달고 싶다면 그 대상의 userKey
+      //targetUser는 null이 가능하다.
 
-      if (userKey == 0) {
-        return res.status(400).send({ message: "로그인 하시기 바랍니다." });
-      }
-
-      const updateComment = await this.commentService.reportComment(
+      const reply = await this.commentService.reComment(
         userKey,
         commentId,
-        why
+        re,
+        targetUser
       );
 
-      if (updateComment === false) {
-        return res.status(400).json({ Message: "중복된 신고 입니다." });
+      console.log(reply);
+      res.status(200).json({ data: reply });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  //대댓글 가져오기
+  getReComment = async (req, res, next) => {
+    try {
+      const { commentId } = req.params;
+      const { userKey } = res.locals.user;
+      //re: 대댓글 내용
+      //targetUser: 만약 대댓글 중에서 해당 대댓글에 답글을 달고 싶다면 그 대상의 userKey
+      //targetUser는 null이 가능하다.
+
+      const reply = await this.commentService.getReComment(commentId);
+
+      res.status(200).json({ data: reply });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  //대댓글 수정 기능
+  putRe = async (req, res, next) => {
+    const { replyId } = req.params;
+    const { userKey } = res.locals.user;
+    const { re } = req.body;
+
+    if (userKey == 0) {
+      return res.status(400).send({ message: "로그인이 필요합니다." });
+    }
+
+    const reply = await this.commentService.putRe(replyId, userKey, re);
+
+    if (!reply) {
+      res.status(400).json({ mes: "삭제된 덧글 입니다." });
+    }
+
+    res.status(200).json({ data: reply });
+    try {
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  //대댓글 삭제 기능
+  //실제로 삭제하진 않고 내용을 "삭제된 덧글입니다."로 바꾼다.
+  deleteRe = async (req, res, next) => {
+    try {
+      const { replyId } = req.params;
+      const { userKey } = res.locals.user;
+
+      if (userKey == 0) {
+        return res.status(400).send({ message: "로그인이 필요합니다." });
       }
 
-      let mes;
-      if (!updateComment) {
-        mes = "뭐하자는 겁니까?"; //본인이 쓴 덧글 본인이 신고한 경우
-        return res.status(400).json({ Message: mes });
-      } else {
-        mes = "신고 성공";
+      const reply = await this.commentService.deleteRe(replyId, userKey);
+
+      if (!reply) {
+        res.status(400).json({ mes: "이미 삭제된 덧글 입니다." });
       }
 
-      res.status(200).json({ Message: mes });
+      res.status(200).json({ mes: "대댓글 삭제 완료", data: reply });
     } catch (error) {
       next(error);
     }

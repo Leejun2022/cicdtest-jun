@@ -10,13 +10,16 @@ dayjs.tz.setDefault("Asia/Seoul");
 class NoteService {
   noteRepository = new NoteRepository();
 
-  createNote = async (tUser, fUser, title, category) => {
-    const createNote = await this.noteRepository.createNote(
+  //방 생성
+  createNoteRoom = async (tUser, fUser, title, category, note) => {
+    const createNote = await this.noteRepository.createNoteRoom(
       tUser,
       fUser,
       title,
       category
     );
+    //쪽지 생성
+    await this.noteRepository.sendNote(note, createNote.roomId, fUser);
     return createNote;
   };
 
@@ -33,7 +36,7 @@ class NoteService {
       room.Notes.length
         ? (recentDate = room.Notes.createdAt)
         : (recentDate = room.createdAt);
-      const date = dayjs(recentDate).tz().format("YYYY.MM.DD HH:mm");
+      const date = dayjs(recentDate).tz().format("YYYY/MM/DD HH:mm");
       return {
         roomId: room.roomId,
         title: room.title,
@@ -66,17 +69,17 @@ class NoteService {
     const roadNotes = await this.noteRepository.roadNotes(roomId);
     //대화상대 닉네임
     let nickname;
+    roadNotes[0].user1 !== userKey
+      ? (nickname = roadNotes[0].NoteRoom.User2.nickname)
+      : (nickname = roadNotes[0].NoteRoom.User1.nickname);
     const notes = roadNotes.map((note) => {
-      console.log(note.userKey);
-      if (note.userKey !== userKey) nickname = note.User.nickname;
-      const date = dayjs(note.createdAt).tz().format("YYYY.MM.DD HH:mm");
+      const date = dayjs(note.createdAt).tz().format("YYYY/MM/DD HH:mm");
       return {
         userKey: note.userKey,
         note: note.note,
         date: date,
       };
     });
-    console.log("서비스", nickname);
 
     return { notes, nickname };
   };

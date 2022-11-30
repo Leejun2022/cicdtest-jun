@@ -56,8 +56,8 @@ class BookMarkService {
       }
       const createdAt = dayjs(post.Choice.createdAt)
         .tz()
-        .format("YYYY.MM.DD HH:mm");
-      const endTime = dayjs(post.Choice.endTime).format("YYYY.MM.DD HH:mm");
+        .format("YYYY/MM/DD HH:mm");
+      const endTime = dayjs(post.Choice.endTime).format("YYYY/MM/DD HH:mm");
       return {
         choiceId: post.Choice.choiceId,
         title: post.Choice.title,
@@ -65,14 +65,15 @@ class BookMarkService {
         choice2Name: post.Choice.choice2Name,
         choice1Per: choice1Per,
         choice2Per: choice2Per,
-        userImage: post.Choice.User.userImage,
+        userImage: post.Choice.User.userImg,
         nickname: post.Choice.User.nickname,
         createdAt: createdAt,
         endTime: endTime,
         choiceCount: post.Choice.choiceCount,
         userKey: post.Choice.userKey,
-        isBookmark: true,
+        isBookMark: true,
         isChoice: isChoice,
+        isEnd: post.Choice.isEnd,
       };
     });
 
@@ -85,7 +86,7 @@ class BookMarkService {
     const result = findBmAdvice.map((post) => {
       const createdAt = dayjs(post.Advice.createdAt)
         .tz()
-        .format("YYYY.MM.DD HH:mm");
+        .format("YYYY/MM/DD HH:mm");
       return {
         adviceId: post.Advice.adviceId,
         title: post.Advice.title,
@@ -93,6 +94,9 @@ class BookMarkService {
         createdAt: createdAt,
         userKey: post.Advice.userKey,
         CommentCount: post.Advice.Comments.length,
+        viewCount: post.Advice.viewCount,
+        catrgoryId: post.Advice.catrgoryId,
+        category: post.Advice.Category.name,
       };
     });
 

@@ -13,7 +13,7 @@ const adviceController = new AdviceController();
 router.get("/", authMiddleware, userController.mainPage);
 
 //행운의편지 메세지 열기
-router.get("/msg", authMiddleware, userController.dailyMessage);
+router.put("/msg", authMiddleware, userController.dailyMessage);
 
 //회원가입
 router.post("/signup", LoginMiddleware, userController.signup);
@@ -35,8 +35,11 @@ router.put(
   userController.profileUpdate
 );
 
-//마이페이지
-router.get("/mypage", authMiddleware, userController.mypage);
+//설정 페이지(관리자 인경우 신고 리스트 보내기)
+router.get("/setting", authMiddleware, userController.setting);
+
+//내가 쓴 글 조회
+router.get("/mypost", authMiddleware, userController.myPost);
 
 //검색
 router.get("/search/:keyword", authMiddleware, userController.search);

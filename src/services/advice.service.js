@@ -1,15 +1,22 @@
 const ErrorCustom = require("../exceptions/error-custom");
 const { ValidationError } = require("sequelize");
 const AdviceRepository = require("../repositories/advice.repository");
+const MissionRepository = require("../repositories/mission.repository");
+const MissionService = require("../services/mission.service");
 const dayjs = require("dayjs");
 const timezone = require("dayjs/plugin/timezone");
 const utc = require("dayjs/plugin/utc");
+const SocketIO = require("socket.io");
+const server = require("../app");
+const io = SocketIO(server, { path: "/socket.io" });
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault("Asia/Seoul");
 
 class AdviceService {
   adviceRepository = new AdviceRepository();
+  missionService = new MissionService();
 
   // 게시물 생성
   createAdvice = async (userKey, title, categoryId, content, isAdult) => {
@@ -20,8 +27,14 @@ class AdviceService {
       content,
       isAdult
     );
+    const missionComplete = await this.missionService.NewComplete(userKey);
 
-    return createAdviceData;
+    if (missionComplete.length) {
+    }
+
+    console.log(mission.map((mission) => mission.missionId));
+
+    return { createAdviceData, mission };
   };
 
   findAllAdviceOne = async (adviceId) => {
@@ -32,59 +45,89 @@ class AdviceService {
   };
 
   // 조언 게시물 전체 조회
-  findAllAdvice = async (filterId, page) => {
-    const findAllAdvice = await this.adviceRepository.findAllAdvice();
+  findAllAdvice = async (categoryId, filterId, page) => {
+    if (categoryId == 0) {
+      const findAllAdvice = await this.adviceRepository.findAllAdvice();
 
-    const data = findAllAdvice.map((post) => {
-      const date = dayjs(post.createdAt).tz().format("YYYY.MM.DD HH:mm");
-      return {
-        adviceId: post.adviceId,
-        userKey: post.userKey,
-        categoryId: post.categoryId,
-        title: post.title,
-        content: post.content,
-        createdAt: date,
-        userImage: post.User.userImg,
-        nickname: post.User.nickname,
-        viewCount: post.viewCount,
-        category: post.Category.name,
-        commentCount: post.Comments.length,
-      };
-    });
+      const data = findAllAdvice.map((post) => {
+        const date = dayjs(post.createdAt).tz().format("YYYY/MM/DD HH:mm");
 
-    if (filterId == "0") {
-      data.sort((a, b) => b.adviceId - a.adviceId);
-    }
-    if (filterId == "1") {
-      data.sort((a, b) => b.viewCount - a.viewCount);
-    }
-    if (filterId == "2") {
-      data.sort((a, b) => b.commentCount - a.commentCount);
-    }
+        let userImage = "";
+        if (
+          post.User.userImg ==
+          "https://imgfiles-cdn.plaync.com/file/LoveBeat/download/20200204052053-LbBHjntyUkg2jL3XC3JN0-v4"
+        ) {
+          userImage =
+            "https://imgfiles-cdn.plaync.com/file/LoveBeat/download/20200204052053-LbBHjntyUkg2jL3XC3JN0-v4";
+        } else {
+          userImage =
+            "https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/profileimage-resize/" +
+            post.User.userImg;
+        }
 
-    let advice;
-    let arr = [];
-    function chunk(data = [], size = 1) {
-      arr = [];
-      for (let i = 0; i < data.length; i += size) {
-        arr.push(data.slice(i, i + size));
+        return {
+          adviceId: post.adviceId,
+          userKey: post.userKey,
+          categoryId: post.categoryId,
+          title: post.title,
+          content: post.content,
+          createdAt: date,
+          userImage: userImage,
+          nickname: post.User.nickname,
+          viewCount: post.viewCount,
+          category: post.Category.name,
+          commentCount: post.Comments.length,
+        };
+      });
+
+      if (filterId == "0") {
+        data.sort((a, b) => b.adviceId - a.adviceId);
       }
-      return arr;
+      if (filterId == "1") {
+        data.sort((a, b) => b.viewCount - a.viewCount);
+      }
+      if (filterId == "2") {
+        data.sort((a, b) => b.commentCount - a.commentCount);
+      }
+
+      let advice;
+      let arr = [];
+      function chunk(data = [], size = 1) {
+        arr = [];
+        for (let i = 0; i < data.length; i += size) {
+          arr.push(data.slice(i, i + size));
+        }
+        return arr;
+      }
+      advice = chunk(data, 10)[Number(page)];
+
+      if (!advice) {
+        advice = [];
+      }
+
+      return advice;
     }
-    advice = chunk(data, 10)[Number(page)];
 
-    return advice;
-
-    // return data;
-  };
-
-  // 조언 게시물 카테고리별 조회
-  findCategoryAdvice = async (categoryId, filterId, page) => {
     const findCategoryAdvice = await this.adviceRepository.findCategoryAdvice(
       categoryId
     );
+
     const data = findCategoryAdvice.map((post) => {
-      const date = dayjs(post.createdAt).tz().format("YYYY.MM.DD HH:mm");
+      const date = dayjs(post.createdAt).tz().format("YYYY/MM/DD HH:mm");
+
+      let userImage = "";
+      if (
+        post.User.userImg ==
+        "https://imgfiles-cdn.plaync.com/file/LoveBeat/download/20200204052053-LbBHjntyUkg2jL3XC3JN0-v4"
+      ) {
+        userImage =
+          "https://imgfiles-cdn.plaync.com/file/LoveBeat/download/20200204052053-LbBHjntyUkg2jL3XC3JN0-v4";
+      } else {
+        userImage =
+          "https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/profileimage-resize/" +
+          post.User.userImg;
+      }
+
       return {
         adviceId: post.adviceId,
         userKey: post.userKey,
@@ -120,6 +163,10 @@ class AdviceService {
       return arr;
     }
     advice = chunk(data, 10)[Number(page)];
+
+    if (!advice) {
+      advice = [];
+    }
 
     return advice;
   };
@@ -131,51 +178,81 @@ class AdviceService {
       adviceId
     );
 
-    const findAdviceImageArray = findOneAdvice.AdviceImages.map((post) => {
-      return [
-        "https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/adviceimage/" +
-          post.adviceImage,
-        "https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/adviceimage-resize/" +
-          post.adviceImage,
-      ];
-    });
+    const findCreatedAt = dayjs(findOneAdvice.createdAt).tz();
+    const plusThreeSec = findCreatedAt.add(3, "s");
+    const findUpdatedAt = dayjs(findOneAdvice.updatedAt).tz();
+    const plusUpdateThreeSec = findUpdatedAt.add(3, "s");
 
-    const comment = findOneAdvice.Comments.map((comment) => {
+    let findAdviceImageArray = [];
+    if (dayjs().tz() <= plusThreeSec || dayjs().tz() <= plusUpdateThreeSec) {
+      findAdviceImageArray = findOneAdvice.AdviceImages.map((post) => {
+        return [
+          "https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/adviceimage/" +
+            post.adviceImage,
+        ];
+      });
+    } else {
+      findAdviceImageArray = findOneAdvice.AdviceImages.map((post) => {
+        return [
+          "https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/adviceimage-resize/" +
+            post.adviceImage,
+        ];
+      });
+    }
+    let selectComment;
+    const commentArray = [];
+    findOneAdvice.Comments.forEach((comment) => {
       const isLike = comment.CommentLikes.filter(
         (like) => like.userKey === userKey
       );
       let boolean;
       isLike.length ? (boolean = true) : (boolean = false);
-      const date = dayjs(comment.createdAt).tz().format("YYYY.MM.DD HH:mm");
-      return {
-        commentId: comment.commentId,
-        userKey: comment.userKey,
-        nickname: comment.User.nickname,
-        userImg: comment.User.userImg,
-        comment: comment.comment,
-        likeCount: comment.CommentLikes.length,
-        createdAt: date,
-        isLike: boolean,
-      };
+      const date = dayjs(comment.updatedAt).tz().format("YYYY/MM/DD HH:mm");
+      if (comment.CommentSelects.length) {
+        selectComment = {
+          commentId: comment.commentId,
+          userKey: comment.userKey,
+          nickname: comment.User.nickname,
+          userImg: comment.User.userImg,
+          comment: comment.comment,
+          likeCount: comment.CommentLikes.length,
+          updatedAt: date,
+          isLike: boolean,
+        };
+      } else {
+        console.log(typeof comment);
+        commentArray.push({
+          commentId: comment.commentId,
+          userKey: comment.userKey,
+          nickname: comment.User.nickname,
+          userImg: comment.User.userImg,
+          comment: comment.comment,
+          likeCount: comment.CommentLikes.length,
+          updatedAt: date,
+          isLike: boolean,
+        });
+      }
     });
     // filterId
     /*등록순, 좋아요순*/
 
     if (filterId == "0") {
-      comment.sort((a, b) => a.commentId - b.commentId);
+      commentArray.sort((a, b) => a.commentId - b.commentId);
     }
     if (filterId == "1") {
-      comment.sort((a, b) => b.likeCount - a.likeCount);
+      commentArray.sort((a, b) => b.likeCount - a.likeCount);
     }
 
     let boolean;
     findOneAdvice.AdviceBMs.length ? (boolean = true) : (boolean = false);
     const createdAt = dayjs(findOneAdvice.createdAt)
       .tz()
-      .format("YYYY.MM.DD HH:mm");
+      .format("YYYY/MM/DD HH:mm");
+
     const updatedAt = dayjs(findOneAdvice.updatedAt)
       .tz()
-      .format("YYYY.MM.DD HH:mm");
+      .format("YYYY/MM/DD HH:mm");
+
     return {
       adviceId: findOneAdvice.adviceId,
       categoryId: findOneAdvice.categoryId,
@@ -191,14 +268,9 @@ class AdviceService {
       viewCount: findOneAdvice.viewCount,
       isBookMark: boolean,
       commentCount: findOneAdvice.Comments.length,
-      comment: comment,
+      selectComment: selectComment,
+      comment: commentArray,
     };
-  };
-
-  // 이미지 찾기(조언 게시글 수정용)
-  findImages = async (imageId) => {
-    const findImage = await this.adviceRepository.findImages(imageId);
-    return findImage;
   };
 
   // 조언 게시물 타이틀 수정
@@ -236,11 +308,12 @@ class AdviceService {
     const myadvice = await this.adviceRepository.myadvice(userKey);
 
     return myadvice.map((post) => {
-      const createdAt = dayjs(post.createdAt).tz().format("YYYY.MM.DD HH:mm");
+      const createdAt = dayjs(post.createdAt).tz().format("YYYY/MM/DD HH:mm");
       return {
         adviceId: post.adviceId,
         userKey: post.userKey,
         categoryId: post.categoryId,
+        category: post.Category.name,
         title: post.title,
         content: post.content,
         createdAt: createdAt,
@@ -249,39 +322,6 @@ class AdviceService {
         viewCount: post.viewCount,
       };
     });
-  };
-
-  reportAdvice = async (userKey, adviceId, why) => {
-    //작성자 확인
-    let type = "advice";
-    const writer = await this.adviceRepository.findAdvice(adviceId);
-    const writerHost = writer.userKey;
-    console.log(writerHost);
-
-    if (userKey === writerHost) {
-      return;
-    }
-
-    const redup = await this.adviceRepository.reportRedup(
-      userKey,
-      writerHost,
-      adviceId,
-      type
-    );
-
-    if (redup[0]) {
-      const dupmes = false;
-      return dupmes;
-    }
-
-
-    const reportAdvice = await this.adviceRepository.reportAdvice(
-      userKey,
-      adviceId,
-      writerHost,
-      type
-    );
-    return reportAdvice;
   };
 }
 
