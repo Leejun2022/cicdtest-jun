@@ -35,8 +35,6 @@ class UserService {
     const DailyArray = await this.dailyMsgRepository.allMsg();
     const msgArray = DailyArray.map((x) => x.msg);
     const msg = msgArray[Math.floor(Math.random() * msgArray.length)];
-    console.log(createUser.userKey);
-    console.log(msg);
     await redisCli.hSet(`${createUser.userKey}`, {
       msg: msg,
       isOpen: 0,
@@ -54,14 +52,14 @@ class UserService {
     if (!passwordVerify) throw new ErrorCustom(400, "비밀번호 오류");
     const accessToken = jwt.sign(
       { userId: user.userId, userKey: user.userKey },
-      process.env.SECRET_KEY
-      // {
-      //   expiresIn: "5s",
-      // }
+      process.env.SECRET_KEY,
+      {
+        expiresIn: "60s",
+      }
     );
 
     const refreshToken = jwt.sign({}, process.env.SECRET_KEY, {
-      expiresIn: "1h",
+      expiresIn: "15d",
     });
     const nickname = user.nickname;
     return { accessToken, refreshToken, nickname };
@@ -85,9 +83,11 @@ class UserService {
   //메인페이지 데이터 가공해서 보내주기
   mainPage = async (userKey) => {
     const getAdvice = await this.adviceRepository.getAdvice();
-    const dailyData = await redisCli.hGetAll(`${userKey}`);
+    // const dailyData = await redisCli.hGetAll(`${userKey}`);
     let isOpen;
-    dailyData.isOpen == "0" ? (isOpen = false) : (isOpen = true);
+    // dailyData.isOpen == "0" || userKey == 0
+    //   ? (isOpen = false)
+    //   : (isOpen = true);
     const adviceData = getAdvice.map((post) => {
       return {
         adviceId: post.adviceId,
@@ -108,17 +108,17 @@ class UserService {
   };
 
   getDailymessage = async (userKey) => {
-    console.log(userKey);
+    const dailyData = await redisCli.hGetAll(`${userKey}`);
+    let isOpen;
+    dailyData.isOpen == "0" ? (isOpen = false) : (isOpen = true);
+    return { isOpen, dailyData };
+  };
+
+  updateMessageOpen = async (userKey) => {
     await redisCli.hSet(`${userKey}`, {
       isOpen: 1,
     });
-    const dailyData = await redisCli.hGetAll(`${userKey}`);
-    return dailyData;
-  };
-
-  messageCountUp = async (userKey) => {
-    console.log("service", userKey);
-    return await this.userRepository.messageCountUp(userKey);
+    await this.userRepository.messageCountUp(userKey);
   };
 
   //마이페이지 데이터 가져오기
@@ -130,21 +130,27 @@ class UserService {
         nickname: "로그인이 필요합니다.",
         userImage:
           "https://imgfiles-cdn.plaync.com/file/LoveBeat/download/20200204052053-LbBHjntyUkg2jL3XC3JN0-v4",
-        totalAdviceComment: 0,
-        totalChoicePick: 0,
       };
     }
     const user = await this.userRepository.findUser(userKey);
-    
-    const userImage = ["https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/profileimage/"+user.userImg];
-    const userResizeImage = ["https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/profileimage-resize/"+user.userImg];
-    const totalUserImage = userImage.concat(userResizeImage);
-    console.log(totalUserImage);
+
+    let userImage = "";
+    if (
+      user.userImg ==
+      "https://imgfiles-cdn.plaync.com/file/LoveBeat/download/20200204052053-LbBHjntyUkg2jL3XC3JN0-v4"
+    ) {
+      userImage =
+        "https://imgfiles-cdn.plaync.com/file/LoveBeat/download/20200204052053-LbBHjntyUkg2jL3XC3JN0-v4";
+    } else {
+      userImage =
+        "https://hh99projectimage-1.s3.ap-northeast-2.amazonaws.com/profileimage-resize/" +
+        user.userImg;
+    }
 
     const result = {
-      userKey: userKey,
       nickname: user.nickname,
-      userImage: totalUserImage,
+
+      userImage: userImage,
       totalAdviceComment: user.Comments.length,
       totalChoicePick: user.isChoices.length,
     };
@@ -154,15 +160,15 @@ class UserService {
 
   findUserImage = async (userKey) => {
     const user = await this.userRepository.findUserImage(userKey);
-    const userImage = ["profileimage/"+user.userImg]
-    const userResizeImage = ["profileimage-resize/"+user.userImg];
+    const userImage = ["profileimage/" + user.userImg];
+    const userResizeImage = ["profileimage-resize/" + user.userImg];
     const totalUserImage = userImage.concat(userResizeImage);
-    console.log(totalUserImage)
+    console.log(totalUserImage);
     const result = {
-      userImage: totalUserImage
-    }
+      userImage: totalUserImage,
+    };
     return result;
-  }
+  };
 
   //검색 가져오기
   search = async (userKey, keyword) => {
@@ -220,157 +226,13 @@ class UserService {
   uploadUserImage = async (imageUrl, userKey) => {
     const foundData = await this.userRepository.findUser(userKey);
     if (!foundData) throw new ErrorCustom(400, "사용자가 존재하지 않습니다.");
-    const findUserImage = imageUrl.split('/')[4]
+    const findUserImage = imageUrl.split("/")[4];
 
     const uploadImagesData = await this.userRepository.uploadUserImage(
       findUserImage,
       userKey
     );
     return uploadImagesData;
-  };
-
-  reword = async (userKey) => {
-    /**유저의 활동 정보를 모두 가져옴 */
-    const totalReword = await this.userRepository.totalReword(userKey);
-
-    const likeArray = totalReword[0].Comments.map((x) => x.CommentLikes.length);
-    /**내가 받은 총 좋아요수 */
-    let likeTotal = 0;
-    likeArray.forEach((x) => {
-      likeTotal += x;
-    });
-
-    const viewCountArray = totalReword[0].Advice.map((x) => x.viewCount);
-
-    /**내 게시글의 총 조회수 */
-    let viewCount = 0;
-
-    viewCountArray.forEach((x) => {
-      viewCount += x;
-    });
-
-    /** 내가 조언해준 횟수*/
-    const totalAdviceComment = totalReword[0].Comments.length;
-
-    /**내가 투표한횟수 */
-    const totalChoicePick = totalReword[0].isChoices.length;
-
-    /**내가 쓴 조언게시글 수 */
-    const totalAdvice = totalReword[0].Advice.length;
-
-    /**투표 게시글 작성 수 */
-    const totalChoice = totalReword[0].Choices.length;
-
-    /**총게시글 작성 수 */
-    const totalPost = totalAdvice + totalChoice;
-
-    /**행운의 편지 열기 횟수 */
-    const totalOpen = totalReword[0].msgOpenCount;
-
-    console.log(
-      `totalAdviceComment:${totalAdviceComment}, 
-      totalChoicePick:${totalChoicePick}, 
-      totalAdvice:${totalAdvice},
-      totalChoice${totalChoice},
-      totalPost${totalPost},
-      viewCount:${viewCount},
-      likeTotal:${likeTotal},
-      totalOpen:${totalOpen}`
-    );
-    /**모든 미션Id */
-    const missionarray = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    /**완료한 미션 */
-    const completedMission = await this.missionRepository.completeMission(
-      userKey
-    );
-
-    /**완료한 미션 ID */
-    const CompleteMission = completedMission.map((x) => x.missionId);
-
-    /**미완료 미션ID */
-    const unCompleteMission = missionarray.filter(
-      (x) => !CompleteMission.includes(x)
-    );
-
-    console.log(unCompleteMission);
-    console.log(CompleteMission);
-
-    /**미완료 미션을 가져와 기준에 충족하면 newCompleteMissonId 배열에 추가*/
-    const mission = await this.missionRepository.mission(unCompleteMission);
-
-    /**새로 완료한 미션이 담긴 배열 */
-    const newCompleteMissionId = [];
-    mission.forEach((x) => {
-      x.missionId;
-      if (x.AdviceMission) {
-        x.AdviceMission.adviceMission <= totalAdviceComment
-          ? newCompleteMissionId.push(x.missionId)
-          : false;
-      }
-      if (x.ChoiceMission) {
-        x.ChoiceMission.choiceMission <= totalChoicePick
-          ? newCompleteMissionId.push(x.missionId)
-          : false;
-      }
-      if (x.PostMission) {
-        x.PostMission.postMission <= totalAdvice
-          ? newCompleteMissionId.push(x.missionId)
-          : false;
-      }
-      if (x.LikeMission) {
-        x.LikeMission.likeMission <= likeTotal
-          ? newCompleteMissionId.push(x.missionId)
-          : false;
-      }
-    });
-
-    for (const missionId of newCompleteMissionId) {
-      await this.missionRepository.createCompleteMission(userKey, missionId);
-    }
-
-    const missionComplete = await this.missionRepository.completeMission(
-      userKey
-    );
-    const missionCompleteId = missionComplete.map((x) => {
-      return [x.missionId, x.isGet];
-    });
-    console.log(missionCompleteId);
-
-    let result = [];
-    for (let i = 1; i < 10; i++) {
-      let isComplete = false;
-      let isGet = false;
-      missionCompleteId.forEach((x) => {
-        if (x[0] == i) {
-          isComplete = true;
-        }
-        if (x[0] == i && x[1] == 1) {
-          isGet = true;
-        }
-      });
-
-      result.push({
-        mission: i,
-        isComplete: isComplete,
-        isGet: isGet,
-      });
-    }
-    const data = {
-      result: result,
-      missionCount: {
-        totalAdviceComment: totalAdviceComment,
-        totalChoicePick: totalChoicePick,
-        totalAdvice: totalAdvice,
-        totalChoice: totalChoice,
-        totalPost: totalPost,
-        viewCount: viewCount,
-        likeTotal: likeTotal,
-        msgOpen: totalOpen,
-      },
-    };
-
-    return data;
   };
 
   getReword = async (userKey, missionId) => {

@@ -14,7 +14,6 @@ class ManagerController {
 
       const newManager = await this.managerService.newManager(targetUser);
 
-      console.log(newManager);
       if (newManager) {
         return res
           .status(200)
@@ -24,24 +23,6 @@ class ManagerController {
           .status(400)
           .json({ Message: "이미 관리자!", data: newManager });
       }
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  //모든 신고글 가져오기
-  allReport = async (req, res, next) => {
-    try {
-      const { userKey, grade } = res.locals.user;
-
-      if (userKey == 0) {
-        return res.status(400).send({ message: "로그인이 필요합니다." });
-      }
-      if (grade == 0 || grade == null) {
-        return res.status(400).send({ message: "당신은 관리자가 아닙니다." });
-      }
-      const allReport = await this.managerService.allReport();
-      res.status(200).json({ Message: "미처리된 신고", data: allReport });
     } catch (error) {
       next(error);
     }
@@ -65,7 +46,7 @@ class ManagerController {
       }
 
       const check = await this.managerService.check(reportId);
-      console.log(check);
+
       if (check) {
         return res.status(400).send({ message: "이미 처리된 신고 입니다." });
       }

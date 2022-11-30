@@ -14,11 +14,23 @@ router.delete("/:commentId", authMiddleware, commentController.deleteComment);
 
 router.put("/like/:commentId", authMiddleware, commentController.likeComment);
 
-//댓글 신고하기
+//대댓글 작성하기
+router.post("/re/:commentId", authMiddleware, commentController.reComment);
+
+//대댓글 가져오기
+router.get("/re/:commentId", authMiddleware, commentController.getReComment);
+
+//대댓글 수정하기
+router.put("/re/:replyId", authMiddleware, commentController.putRe);
+
+//대댓글 삭제하기
+router.delete("/re/:replyId", authMiddleware, commentController.deleteRe);
+
+//조언 댓글 채택
 router.put(
-  "/report/:commentId",
+  "/select/:commentId",
   authMiddleware,
-  commentController.reportComment
+  commentController.selectComment
 );
 
 module.exports = router;

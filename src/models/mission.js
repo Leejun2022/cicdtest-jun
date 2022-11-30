@@ -20,6 +20,18 @@ module.exports = (sequelize, DataTypes) => {
       this.hasOne(models.PostMission, {
         foreignKey: "missionId",
       });
+      this.hasOne(models.MsgMission, {
+        foreignKey: "missionId",
+      });
+      this.hasOne(models.MissionCompleteMission, {
+        foreignKey: "missionId",
+      });
+      this.hasOne(models.SelectMission, {
+        foreignKey: "missionId",
+      });
+      this.hasOne(models.SolutionMission, {
+        foreignKey: "missionId",
+      });
       this.hasMany(models.MissionComplete, {
         foreignKey: "missionId",
       });

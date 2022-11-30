@@ -15,8 +15,6 @@ class ChoiceController {
         res.status(400).send({ errorMessage: "입력 내용을 확인해 주십시오" });
         return;
       }
-      console.log("받아온 endTime");
-      console.log(endTime);
       const createchoice = await this.choiceService.createchoice(
         userKey,
         title,
@@ -57,20 +55,6 @@ class ChoiceController {
         a++;
       }
       res.status(200).json({ choice: choice });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  //마이페이지 게시글 조회
-  mychoice = async (req, res, next) => {
-    try {
-      const { userKey } = res.locals.user;
-      if (userKey == 0) {
-        return res.status(400).send({ message: "로그인이 필요합니다." });
-      }
-      const mychoice = await this.choiceService.findMychoice(userKey);
-      res.status(200).json({ data: mychoice });
     } catch (err) {
       next(err);
     }

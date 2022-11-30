@@ -2,7 +2,7 @@ const { Note, User, NoteRoom } = require("../models");
 const { Op } = require("sequelize");
 
 class NoteRepository {
-  createNote = async (tUser, fUser, title, category) => {
+  createNoteRoom = async (tUser, fUser, title, category) => {
     const Title = `[${category}]${title}`;
     const [createNoteRoom, create] = await NoteRoom.findOrCreate({
       where: {
@@ -51,11 +51,22 @@ class NoteRepository {
     const findallNote = await Note.findAll({
       order: [["createdAt", "ASC"]],
       where: { roomId: roomId },
-      include: [{ model: User, attributes: ["nickname", "userImg"] }],
+      include: [
+        {
+          model: NoteRoom,
+          include: [
+            { model: User, as: "User1" },
+            { model: User, as: "User2" },
+          ],
+        },
+      ],
     });
     //console.log(findNoteOne, "이건 안나오나?");
 
     return findallNote;
+  };
+  sendNote = async (note, roomId, userKey) => {
+    await Note.create({ note: note, roomId: roomId, userKey: userKey });
   };
 
   deleteNote = async (noteId, userKey) => {

@@ -7,12 +7,20 @@ module.exports = {
      * Add altering commands here.
      *
      * Example:
-     * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
+    //  * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
      */
-    // await queryInterface.createTable("NoteRoom", {
-    //   Id: Sequelize.INTEGER,
-    // });
-    // return await queryInterface.changeColumn("Notes", "userKey", {
+    await queryInterface.createTable("DailyUpdate", {
+      Id: {
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: Sequelize.INTEGER,
+      },
+      userKey: Sequelize.INTEGER,
+      msg: Sequelize.STRING,
+      isOpen: Sequelize.BOOLEAN,
+    });
+    // return await queryInterface.addColumn("Replies", "userKey", {
     //   allowNull: false,
     //   type: Sequelize.INTEGER,
     //   references: {
@@ -20,6 +28,14 @@ module.exports = {
     //     key: "userKey",
     //   },
     // });
+    return await queryInterface.addeColumn("Replies", "userKey", {
+      allowNull: false,
+      type: Sequelize.INTEGER,
+      references: {
+        model: "Users",
+        key: "userKey",
+      },
+    });
     // return queryInterface.changeColumn("isChoices", "choiceId", {
     //   allowNull: false,
     //   type: Sequelize.INTEGER,
@@ -39,10 +55,8 @@ module.exports = {
      * await queryInterface.dropTable('users');
      */
     // return await queryInterface.dropTable("isChoices");
-
-    // return queryInterface.dropTable("Notes");
+    // return queryInterface.dropTable("DailyUpdate");
     // return queryInterface.removeColumn("AdviceImages", "resizeImage");
-    // return queryInterface.removeColumn("Notes", "tUser");
-
+    // return queryInterface.removeColumn("Users", "resizeImg");
   },
 };
