@@ -5,4 +5,4 @@ cd $REPOSITORY
 
 npm install
 
-sudo pm2 start dist
+sudo pm2 restart app
