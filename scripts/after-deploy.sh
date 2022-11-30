@@ -1,5 +1,5 @@
 #!/bin/bash
-REPOSITORY=/home/ubuntu/cicdtest/src
+REPOSITORY=/home/ubuntu/src
 
 cd $REPOSITORY
 
