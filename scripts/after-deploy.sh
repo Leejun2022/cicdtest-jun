@@ -1,5 +1,5 @@
 #!/bin/bash
-REPOSITORY=/home/ubuntu/src
+REPOSITORY=/home/ubuntu/test/src
 
 cd $REPOSITORY
 
